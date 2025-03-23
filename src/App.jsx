@@ -39,10 +39,12 @@ function App() {
 
   const getProducts = async () => {
     try {
+
       const res = await axios.get(
-        `${BASE_URL}/v2/api/${API_PATH}/admin/products`
+        `${BASE_URL}/v2/api/${API_PATH}/products/all`
+        // https://ec-course-api.hexschool.io/v2/api/stacylin/products/all
       );
-      console.log('getProducts的結果:');
+     
       console.log(res);
       setProducts(res.data.products);
     } catch (error) {
@@ -91,10 +93,15 @@ function App() {
   },[])
 
   const productModalRef = useRef(null);
+  const delproductModalRef = useRef(null);
   const [modalMode, setModalMode] = useState(null);
 
   useEffect(() => {
     new Modal(productModalRef.current, {
+      backdrop:false
+    });
+
+    new Modal(delproductModalRef.current, {
       backdrop:false
     });
     // console.log(Modal.getInstance(productModalRef.current));
@@ -103,6 +110,7 @@ function App() {
 
 
   const handleOpenProductModal = (mode, product) => {
+    
     setModalMode(mode);
 
     // console.log('mode:' + mode);
@@ -130,6 +138,8 @@ function App() {
 
     modalInstance.hide();
   }
+
+
 
   const [tempProduct, setTempProduct] = useState({defaultModalState});
 
@@ -189,6 +199,21 @@ const createProduct = async () => {
   }
 }
 
+const deleteProduct = async () => {
+  try{
+    await axios.delete(`${BASE_URL}/v2/api/${API_PATH}/admin/product`, {
+      data: {
+        ...tempProduct,
+        origin_price:Number(tempProduct.origin_price),
+        price:Number(tempProduct.price),
+        is_enabled:tempProduct.is_enabled ? 1 : 0
+      }
+    })
+  } catch (error) {
+    alert('刪除產品失敗');
+  }
+}
+
 const updateProduct = async () => {
   try{
     await axios.put(`${BASE_URL}/v2/api/${API_PATH}/admin/product/${tempProduct.id}`, {
@@ -200,7 +225,7 @@ const updateProduct = async () => {
       }
     });
   } catch (error) {
-    alert('新增產品失敗');
+    alert('編輯產品失敗');
   }
 }
 
@@ -216,6 +241,15 @@ const handleUpdateProduct = async () => {
     alert('更新產品失敗');
   }
 }
+
+const handleDeleteProduct = async () => {
+  try {
+    await deleteProduct();
+    getProducts();
+    handleCloseDelProductModal();
+  } catch (error) {
+    alert('刪除產品失敗');
+  }
 
   return (
     <>
@@ -247,7 +281,7 @@ const handleUpdateProduct = async () => {
                       <td>
                       <div className="btn-group">
                         <button onClick={() => handleOpenProductModal('edit', product)} type="button" className="btn btn-outline-primary btn-sm">編輯</button>
-                        <button type="button" className="btn btn-outline-danger btn-sm">刪除</button>
+                        <button onClick={handleOpenDelProductModal} type="button" className="btn btn-outline-danger btn-sm">刪除</button>
                       </div>
                       </td>
                     </tr>
@@ -353,10 +387,14 @@ const handleUpdateProduct = async () => {
                   ))}
                
                   <div className="btn-group w-100">
-                    {tempProduct.imagesUrl.length < 5 && tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] !== "" && (
-                      <button onClick={handleAddImage} className="btn btn-outline-primary btn-sm w-100">新增圖片</button>)}
+                  {Array.isArray(tempProduct.imagesUrl) && tempProduct.imagesUrl.length < 5 && tempProduct.imagesUrl[tempProduct.imagesUrl.length - 1] !== "" && (
+                  <button onClick={handleAddImage} className="btn btn-outline-primary btn-sm w-100">新增圖片</button>
+                  )}
 
-                    {tempProduct.imagesUrl.length > 1 && (<button onClick={handleRemoveImage} className="btn btn-outline-danger btn-sm w-100">取消圖片</button>)}
+                  {Array.isArray(tempProduct.imagesUrl) && tempProduct.imagesUrl.length > 1 && (
+                    <button onClick={handleRemoveImage} className="btn btn-outline-danger btn-sm w-100">取消圖片</button>
+                  )}
+
                   </div>
                   
                   
@@ -498,8 +536,49 @@ const handleUpdateProduct = async () => {
         </div>
       </div>
 </div>
+
+    <div
+      ref={delproductModalRef}
+      className="modal fade"
+      id="delProductModal"
+      tabIndex="-1"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h1 className="modal-title fs-5">刪除產品</h1>
+            <button
+              onClick={handleCloseDelProductModal}
+              type="button"
+              className="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div className="modal-body">
+            你是否要刪除 
+            <span className="text-danger fw-bold">{tempProduct.title}</span>
+          </div>
+          <div className="modal-footer">
+            <button 
+              onClick={handleCloseDelProductModal}
+              type="button"
+              className="btn btn-secondary"
+            >
+              取消
+            </button>
+            <button 
+              onClick={handleDeleteProduct}
+              type="button" className="btn btn-danger">
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     </>
   );
 }
-
+}
 export default App;
